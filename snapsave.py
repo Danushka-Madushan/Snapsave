@@ -117,7 +117,7 @@ class snapsave:
       return response.content.decode('ascii', errors='ignore')
 
 if __name__ == "__main__":
-  link = print('\n Post Link : ')
+  link = input('\n Post Link : ')
   src = fb(link, cookies()).viewsource()
   rawdata = re.sub('\n', '', snapsave(src).extract())
   vn = re.search(r'class="video-des">([^<]+)', rawdata).group(1)
