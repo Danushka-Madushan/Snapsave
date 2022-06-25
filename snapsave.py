@@ -6,10 +6,15 @@ import base64
 import msvcrt
 import sqlite3
 import requests
+import argparse
 import webbrowser
 import win32crypt
 from Crypto.Cipher import AES
 from datetime import datetime, timedelta
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-f', default=False, action=argparse.BooleanOptionalAction)
+args = parser.parse_args()
 
 def get_chrome_datetime(chromedate):
     if chromedate != 86400000000 and chromedate:
@@ -82,19 +87,16 @@ class fb:
     'authority': 'www.facebook.com',
     'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
     'accept-language': 'en-US,en;q=0.9,si;q=0.8',
-    'sec-ch-ua': '" Not A;Brand";v="99", "Chromium";v="102", "Google Chrome";v="102"',
     'sec-fetch-dest': 'document',
     'sec-fetch-site': 'none',
-    'upgrade-insecure-requests': '1',
     'user-agent': 'Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36',
-    'viewport-width': '1280',
     }
     self.cookies = cookies
 
   def viewsource(self):
     response = requests.get(self.videolink, cookies=self.cookies, headers=self.headers)
     if response.status_code == 200:
-      return response.content.decode('ascii', errors='ignore')
+      return response.content.decode('utf-8', errors='ignore')
 
 class snapsave:
   def __init__(self, src):
@@ -114,15 +116,22 @@ class snapsave:
   def extract(self):
     response = requests.post(self.api, headers=self.headers, data={'html_content': self.source})
     if response.status_code == 200:
-      return response.content.decode('ascii', errors='ignore')
+      return response.content.decode('utf-8', errors='ignore')
 
 if __name__ == "__main__":
   link = input('\n Post Link : ')
   src = fb(link, cookies()).viewsource()
   rawdata = re.sub('\n', '', snapsave(src).extract())
-  vn = re.search(r'class="video-des">([^<]+)', rawdata).group(1)
+  x = re.search(r'class="video-des">([^<]+)', rawdata)
+  vn = x.group(1) if x else 'facebook video'
   links = re.findall(r"class=.video-quality.>(HD|SD)</td> ?<td>No</td>[^']+.([^']+)", rawdata)
   print('\n Video : %s' % vn)
+  if args.f:
+    lj, lj['video'] = {}, vn
+    lj = {**lj, **{"streams":{}}}
+    for each in links:
+        lj['streams'][each[0]] = each[1]
+    with open('links.json', 'w') as file:file.write(json.dumps(lj, indent=4));file.close()
   for each in links: 
     print('\n Press enter to Download in (%s)' % each[0])
     if msvcrt.getch() == b'\r':
